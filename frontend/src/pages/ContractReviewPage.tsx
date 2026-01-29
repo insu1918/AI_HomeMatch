@@ -8,8 +8,6 @@ export default function ContractReviewPage() {
   const [selectedReview, setSelectedReview] = useState<number | null>(null)
   const [selectedClause, setSelectedClause] = useState(0)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [showDiscrepancy, setShowDiscrepancy] = useState(false)
-  const discrepancyRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   // URL 파라미터에서 reviewId를 받아서 상세 화면으로 이동
@@ -24,40 +22,73 @@ export default function ContractReviewPage() {
     }
   }, [searchParams])
   
-  // 불일치 분석 섹션으로 스크롤
-  useEffect(() => {
-    if (showDiscrepancy && discrepancyRef.current) {
-      discrepancyRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [showDiscrepancy])
-
   const clauses = [
     {
       id: 0,
       title: '전세 보증금 반환 의무',
       keywords: ['보증금', '반환', '의무', '만기'],
-      original: '제3조(보증금의 반환) 임대인은 임대차 계약기간이 만료되거나 해지되었을 때 임대차 보증금을 임차인에게 즉시 반환하여야 한다. 다만, 임차인의 채무불이행으로 인한 손해배상금 등 임대차 관계에서 발생하는 임차인의 모든 채무를 공제하고 남은 금액을 반환한다.',
-      explanation: '임대차 계약이 끝나면 임대인(집주인)은 세입자에게 보증금을 돌려줄 의무가 있습니다. 이때, 만약 세입자가 월세를 밀렸거나 집을 파손하여 수리비가 발생했다면, 그 금액을 제외하고 나머지 보증금을 돌려주게 됩니다.',
-      laws: [
-        '주택임대차보호법 제3조 (대항력 등)',
-        '민법 제618조 (임대차의 의의)',
+      conclusion:
+        '현재 특약 문구는 기본적인 보증금 반환 의무는 규정하고 있으나, 반환 시점과 공제 범위가 모호해 분쟁 소지가 있습니다. 반환 기한과 공제 항목을 더 구체적으로 명시하는 것이 안전합니다.',
+      risk_points: [
+        '“즉시 반환” 표현만 있고 구체적인 지급 기한(예: 계약 종료 후 ○일 이내)이 없어 지연 시 분쟁 가능성',
+        '임차인의 모든 채무 공제 범위가 넓고 추상적이라, 과도한 공제 주장 위험',
+        '중도 해지 또는 부분 해지 시 보증금 정산 방식이 규정되어 있지 않음',
       ],
-      disputes: [
-        '계약 만기 시 보증금 반환 지연',
-        '수리비, 공과금 등 공제 금액에 대한 이견',
-        '임대인이 새로운 임차인을 구하지 못했다는 이유로 반환 거부',
+      law_basis: [
+        {
+          text: '주택임대차보호법 제3조는 임대차의 대항력 및 보증금 회수를 보호하는 취지로, 임차인의 보증금 반환 요구권을 전제로 합니다.',
+        },
+        {
+          text: '민법 제618조 이하 임대차 규정에 따라 임대인은 목적물 사용·수익의 대가로서 보증금을 반환할 기본 의무가 있습니다.',
+        },
       ],
-      standard: '본 계약은 임대차 기간 만료 시 임차인은 임차 목적물을 원상회복하여 임대인에게 명도하고, 임대인은 보증금 전액을 임차인에게 반환한다.',
+      precedent_basis: [
+        {
+          why_important: '보증금 반환 지연 시, 반환 기한을 둘러싼 분쟁에서 계약 문구의 명확성이 핵심 판단 요소가 됨',
+          evidence:
+            '판례에서는 “상당한 기간 내” 등 추상적 표현보다, 계약서에 구체적인 지급 기한이 명시된 경우 그 기준에 따라 지연 손해배상 책임을 인정·제한한 사례가 다수 존재합니다.',
+        },
+      ],
+      mediation_cases: [
+        {
+          text: '임대인이 “수리비 공제”를 이유로 보증금의 절반 이상을 공제하려다, 실제 수리 견적과 불일치해 조정 과정에서 상당 부분 반환이 이뤄진 사례가 있습니다.',
+        },
+      ],
+      original:
+        '제3조(보증금의 반환) 임대인은 임대차 계약기간이 만료되거나 해지되었을 때 임대차 보증금을 임차인에게 즉시 반환하여야 한다. 다만, 임차인의 채무불이행으로 인한 손해배상금 등 임대차 관계에서 발생하는 임차인의 모든 채무를 공제하고 남은 금액을 반환한다.',
+      recommended_clauses:
+        '① 임대인은 임대차 계약기간이 만료되거나 해지된 날로부터 ○일 이내에 임차인에게 보증금을 반환한다.\n② 임대인은 임차인의 연체차임, 공과금, 객관적으로 입증 가능한 수리비 등 실제 발생한 채무만을 보증금에서 공제할 수 있으며, 공제 내역과 산출 근거를 서면(또는 전자문서)로 제공한다.\n③ 중도 해지 또는 부분 해지 시 보증금 정산 기준(일할 계산, 공과금 정산 기준 등)은 별도 특약에 따라 정한다.',
     },
     {
       id: 1,
       title: '임대차 계약 갱신 청구권',
       keywords: ['갱신', '청구권', '계약'],
-      original: '',
-      explanation: '',
-      laws: [],
-      disputes: [],
-      standard: '',
+      conclusion:
+        '갱신 요구권 행사 요건과 절차가 부족하게 기재된 특약입니다. 세입자의 법정 갱신요구권을 제한하는 내용이 없는지, 법령과 충돌하지 않는지 반드시 확인해야 합니다.',
+      risk_points: [
+        '계약서 특약이 법정 갱신요구권보다 불리하게 규정된 경우, 실제 효력에 대한 분쟁 가능성',
+        '갱신 거절 사유(보증금 미납, 목적물 훼손 등)에 대한 기준이 모호하면 분쟁 시 해석 다툼 발생',
+      ],
+      law_basis: [
+        {
+          text: '주택임대차보호법 제6조의3(계약갱신 요구권)은 일정 요건 하에 임차인의 계약갱신 요구권을 보장하며, 이에 반하는 특약은 무효가 될 수 있습니다.',
+        },
+      ],
+      precedent_basis: [
+        {
+          why_important: '갱신 거절 사유를 둘러싼 분쟁에서, 판례는 임차인 보호와 계약의 구체적 문구를 함께 고려하여 효력을 판단합니다.',
+          evidence:
+            '세입자의 경미한 의무 위반만을 이유로 갱신 거절을 인정하지 않은 판례들이 있어, 특약 문구가 과도하게 임차인에게 불리할 경우 실제 효력은 제한될 수 있습니다.',
+        },
+      ],
+      mediation_cases: [
+        {
+          text: '“계약 만료 시 재계약 불가”라는 특약만 기재되었으나, 실제로는 법정 갱신요구권이 인정되어 임차인이 추가 2년 거주를 확보한 분쟁조정 사례가 있습니다.',
+        },
+      ],
+      original: '제4조(계약 갱신) 임차인은 임대차 기간 만료 3개월 전까지 갱신 의사를 서면으로 통지하지 않을 경우, 임대인은 갱신을 거절할 수 있다.',
+      recommended_clauses:
+        '① 임차인은 임대차 기간 만료 6개월 전부터 2개월 전 사이에 서면(전자문서 포함)으로 계약 갱신을 요구할 수 있다.\n② 임대인은 주택임대차보호법 등 관련 법령에서 정한 정당한 거절 사유가 있는 경우에 한하여 갱신을 거절할 수 있으며, 그 사유를 서면으로 통지한다.\n③ 본 조는 주택임대차보호법상 계약갱신 요구권을 배제하거나 제한하지 않는 범위에서만 효력이 있다.',
     },
   ]
 
@@ -297,237 +328,194 @@ export default function ContractReviewPage() {
       {/* 상세 분석 결과 보기 */}
       {view === 'detail' && (
         <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <button
-                  onClick={() => {
-                    setView('list')
-                    setSelectedReview(null)
-                    setShowDiscrepancy(false)
-                  }}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">계약서 상세 분석 결과</h1>
-          </div>
-
-          <div className="bg-red-50 p-5 rounded-xl shadow-sm">
-            <span className="inline-block px-3 py-1 mb-2 text-sm font-semibold rounded-full bg-red-100 text-red-700">
-              중요 안내
-            </span>
-            <div className="pl-2">
-              <h3 className="font-bold text-red-900 mb-1 text-xl">면책 고지</h3>
-              <p className="text-base text-red-800 leading-relaxed">
-                본 AI 점검 결과는 법률 자문이 아니며, 정보 제공을 목적으로 합니다. 정확한 법률 판단은 반드시 전문가와 상담하시기 바랍니다.
-              </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  setView('list')
+                  setSelectedReview(null)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">계약서 상세 분석 결과</h1>
+                <p className="text-sm text-gray-500 mt-1">
+                  특약별로 핵심 결론, 리스크, 법·판례·분쟁 근거를 한 번에 확인하세요.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 items-stretch">
-            {/* Left Panel - Clause List */}
-            <div className="bg-white border border-gray-200 rounded-lg p-4 h-full flex flex-col">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">특약 리스트 및 중요 키워드</h2>
-              <div className="space-y-2">
+          {/* 상단: 특약 리스트 탭 + AI 종합 판단 카드 */}
+          <div className="space-y-6 mt-0">
+            <div>
+              <div className="flex gap-1 bg-gray-50">
                 {clauses.map((clause, idx) => (
                   <button
                     key={clause.id}
                     onClick={() => setSelectedClause(idx)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    className={`px-4 py-2 text-sm rounded-t-lg transition-all ${
                       selectedClause === idx
-                        ? 'bg-primary-50 border-2 border-primary-500'
-                        : 'border border-gray-200 hover:bg-gray-50'
+                        ? 'bg-white border border-gray-300 border-b-white text-gray-900 font-semibold'
+                        : 'text-gray-500 border border-gray-200 bg-white hover:text-gray-700'
                     }`}
                   >
-                    <div className="font-medium text-gray-900 mb-1">{clause.title}</div>
-                    {selectedClause === idx && (
-                      <div className="text-sm text-gray-600 mt-2">
-                        주요 키워드: {clause.keywords.join(', ')}
-                      </div>
-                    )}
+                    {clause.title}
                   </button>
                 ))}
               </div>
+
+              <div className="bg-white border border-gray-200 rounded-b-xl border-t-0">
+                <div className="p-6">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <div className="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
+                        <Lightbulb className="w-3.5 h-3.5" />
+                        AI 종합 판단
+                      </div>
+                      <h2 className="mt-3 text-xl font-bold text-gray-900">{currentClause.title}</h2>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-800">{currentClause.conclusion}</p>
+
+                  {/* 카드 하단에 녹아드는 면책 고지 */}
+                  <div className="mt-4 rounded-md bg-red-50 px-3 py-2 border border-red-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-red-700 border border-red-100">
+                        중요 안내
+                      </span>
+                      <span className="text-[11px] font-medium text-red-800">면책 고지</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-red-800">
+                      본 AI 점검 결과는 법률 자문이 아니며, 정보 제공 목적의 참고 자료입니다. 정확한 법률 판단이 필요하다면 반드시 전문가와 상담하세요.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Right Panel - Clause Details */}
-            <div className="md:col-span-2 space-y-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <FileText className="w-5 h-5 text-primary-600" />
-                  <h3 className="text-lg font-bold text-gray-900">선택 특약 원문</h3>
+            {/* 아래는 나머지 상세 분석 영역 */}
+
+            {/* 원문 & 추천 특약 문구 */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-primary-600" />
+                  <h3 className="text-sm font-semibold text-gray-900">선택 특약 원문</h3>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700 whitespace-pre-wrap">
+                <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">
                   {currentClause.original}
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-primary-600" />
-                  <h3 className="text-lg font-bold text-gray-900">쉬운 설명</h3>
-                </div>
-                <p className="text-gray-700">{currentClause.explanation}</p>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <CheckCircle className="w-5 h-5 text-primary-600" />
-                  <h3 className="text-lg font-bold text-gray-900">관련 법령</h3>
-                </div>
-                <ul className="space-y-2">
-                  {currentClause.laws.map((law, idx) => (
-                    <li key={idx} className="text-gray-700">• {law}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <AlertTriangle className="w-5 h-5 text-primary-600" />
-                  <h3 className="text-lg font-bold text-gray-900">분쟁 포인트</h3>
-                </div>
-                <ul className="space-y-2">
-                  {currentClause.disputes.map((dispute, idx) => (
-                    <li key={idx} className="text-gray-700">• {dispute}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <FileText className="w-5 h-5 text-primary-600" />
-                    <h3 className="text-lg font-bold text-gray-900">추천 표준 문구</h3>
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-primary-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">권장 수정/보완 특약 문구</h3>
                   </div>
-                  <button className="flex items-center space-x-2 px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                    <Copy className="w-4 h-4" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(currentClause.recommended_clauses || '')
+                    }}
+                    className="flex items-center gap-1 rounded-lg border border-gray-300 px-2.5 py-1 text-[11px] text-gray-700 hover:bg-gray-50"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
                     <span>복사</span>
                   </button>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
-                  {currentClause.standard}
+                <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  {currentClause.recommended_clauses}
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-8">
-            <button
-              onClick={() => {
-                setShowDiscrepancy(true)
-              }}
-              className="block w-full px-10 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 text-center font-semibold text-lg shadow-md"
-            >
-              중개사 설명 vs 계약서 불일치 확인하기
-            </button>
-          </div>
+            {/* 리스크 포인트 */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                <h3 className="text-sm font-semibold text-gray-900">주요 리스크 포인트</h3>
+              </div>
+              <ul className="mt-1 space-y-2 text-sm text-gray-800">
+                {currentClause.risk_points?.map((risk: string, idx: number) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span>{risk}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-          {/* 불일치 분석 섹션 */}
-          {showDiscrepancy && (
-            <div ref={discrepancyRef} className="mt-12 pt-8 border-t-2 border-gray-300 space-y-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  중개사 설명 vs 계약서 불일치 분석
-                </h2>
-                <p className="text-gray-600">
-                  중개사의 설명과 실제 계약서 내용 간의 차이를 확인하고, 잠재적인 위험을 파악하세요.
-                </p>
+            {/* 법·판례·분쟁 근거 */}
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-white border border-gray-200 rounded-xl p-6 md:col-span-1">
+                <h3 className="mb-3 text-sm font-semibold text-gray-900">법령 근거</h3>
+                <ul className="space-y-2 text-xs text-gray-800">
+                  {currentClause.law_basis?.map(
+                    (law: { text: string }, idx: number) => (
+                      <li key={idx} className="leading-relaxed">
+                        {law.text}
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-6">
-                {/* Left Panel */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">제공된 중개사 설명</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
-                    부동산 중개인은 구두로 '해당 건물은 전세권 설정이 되어 있지 않으며, 대출금액이 적어 안전하다'고 설명했습니다. 또한, 건물주가 직접 거주하며 관리하고 있어 문제가 발생할 가능성이 매우 낮다고 강조했습니다.
-                  </div>
-                </div>
-
-                {/* Center Panel - Warning */}
-                <div className="bg-white border-2 border-red-500 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-red-900 mb-4">
-                    중개사 설명과 계약서 내용이 심각하게 불일치
-                  </h3>
-                  <div className="text-sm text-gray-700 space-y-2">
-                    <p>
-                      중개사는 전세권이 없으며 대출금액이 적어 안전하다고 설명했으나, 계약서에는 선순위 전세권과 2억 5천만 원의 근저당권이 명시되어 있습니다.
-                    </p>
-                    <p>
-                      이는 임차인의 보증금 회수에 중대한 위험을 초래할 수 있습니다. 특히 선순위 전세권과 근저당권은 임차인의 보증금보다 우선하여 변제받을 수 있어, 경매 시 보증금 회수가 어려울 수 있습니다.
-                    </p>
-                    <p className="font-bold mt-4">
-                      중개사에게 불일치 사항에 대한 명확한 설명을 요구하고, 계약 진행을 전면 재검토하거나 법률 전문가와 상담하세요.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Right Panel */}
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">관련 계약서 조항</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
-                    본 계약 체결 전 확인된 등기부등본에 따르면, 해당 건물에는 선순위 전세권 설정(전세금 1억원)이 완료되어 있으며, 채무최고액 2억 5천만 원의 근저당권이 설정되어 있음을 확인한다. 임차인은 이 사실을 충분히 인지하고 본 계약에 동의한다.
-                  </div>
-                </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-6 md:col-span-1">
+                <h3 className="mb-3 text-sm font-semibold text-gray-900">판례 근거</h3>
+                <ul className="space-y-3 text-xs text-gray-800">
+                  {currentClause.precedent_basis?.map(
+                    (p: { why_important: string; evidence: string }, idx: number) => (
+                      <li key={idx} className="space-y-1 leading-relaxed">
+                        <p className="font-medium text-gray-900">{p.why_important}</p>
+                        <p className="text-gray-700">{p.evidence}</p>
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
 
-              {/* Action Cards */}
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">임대인에게 확인 요청</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    불일치 사항에 대해 임대인에게 직접 문의하고 공식적인 답변을 받아보세요.
-                  </p>
-                  <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium">
-                    임대인에게 확인 요청하기
-                  </button>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">부동산 배지 검토</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    이 부동산의 신뢰도 및 안전성 관련 HomeMatch 배지를 상세하게 검토합니다.
-                  </p>
-                  <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium">
-                    배지 검토하기
-                  </button>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-lg p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">위험 점수 가이드</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    불일치가 HomeMatch 위험 신호 점수에 어떻게 반영되는지 이해합니다.
-                  </p>
-                  <button className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium">
-                    위험 점수 가이드 확인
-                  </button>
-                </div>
-              </div>
-
-              {/* 다음 단계: 등기부등본 분석 */}
-              <div className="bg-white border-2 border-primary-200 rounded-lg p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <FileCheck className="w-6 h-6 text-primary-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">다음: 등기부등본 분석</h3>
-                      <p className="text-sm text-gray-600">
-                        소유자 일치, 근저당·가압류, 공동소유 등 6가지만 확인하세요.
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    to="/contract/deed"
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
-                  >
-                    등기부등본 분석하기
-                    <ChevronRight className="w-4 h-4" />
-                  </Link>
-                </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-6 md:col-span-1">
+                <h3 className="mb-3 text-sm font-semibold text-gray-900">분쟁조정사례 요약</h3>
+                <ul className="space-y-2 text-xs text-gray-800">
+                  {currentClause.mediation_cases?.map(
+                    (m: { text: string }, idx: number) => (
+                      <li key={idx} className="leading-relaxed">
+                        {m.text}
+                      </li>
+                    )
+                  )}
+                </ul>
               </div>
             </div>
-          )}
+
+            {/* 다음 단계: 등기부등본 분석 CTA */}
+            <div className="bg-white border border-primary-200 rounded-xl p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-50">
+                    <FileCheck className="w-6 h-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">다음 단계: 등기부등본 분석으로 이어가기</h3>
+                    <p className="mt-1 text-xs text-gray-600">
+                      소유자 일치, 근저당·가압류, 공동 소유 등 핵심 6가지를 한 번에 점검하세요.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  to="/contract/deed"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                >
+                  등기부등본 분석하기
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
