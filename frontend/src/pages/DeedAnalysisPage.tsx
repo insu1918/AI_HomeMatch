@@ -12,7 +12,7 @@ import {
   Loader2,
 } from 'lucide-react'
 
-// 개발 시 Vite 프록시 사용: /api/deed → localhost:8001 (deed-service 실행 필요)
+// 개발 시 Vite 프록시 사용: /api/deed → localhost:8000 (core/RAG/api_server.py 실행 필요)
 const DEED_API_URL = import.meta.env.VITE_DEED_API_URL ?? ''
 const DEED_BASE = DEED_API_URL || '/api/deed'
 
