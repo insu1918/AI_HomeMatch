@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
+      host: true, // 같은 공유기(LAN)에서 http://<이PC의IP>:5173 으로 접속 가능
       proxy,
     },
   }
