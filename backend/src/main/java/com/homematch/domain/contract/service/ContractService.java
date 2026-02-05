@@ -51,33 +51,47 @@ public class ContractService {
         Contract contract = contractRepository.findById(contractId)
                 .orElseThrow(() -> new IllegalArgumentException("contract not found: " + contractId));
 
-        List<ClauseAnalysisResult> entities = req.getRows().stream()
-                .map(row -> ClauseAnalysisResult.builder()
-                        .contract(contract)
-                        .clauseIndex(row.getClauseIndex())
-                        .clauseText(row.getClauseText())
-                        .level(ContractLevel.valueOf(row.getLevel()))
-                        .conclusion(row.getConclusion())
+        List<BulkClauseAnalysisSaveRequest.ClauseAnalysisRow> rows = req.getRows();
+        List<ClauseAnalysisResult> entities = new java.util.ArrayList<>(rows.size());
+        for (int i = 0; i < rows.size(); i++) {
+            BulkClauseAnalysisSaveRequest.ClauseAnalysisRow row = rows.get(i);
+            Integer clauseIndex = row.getClauseIndex() != null ? row.getClauseIndex() : i;
+            String clauseText = row.getClauseText() != null ? row.getClauseText() : "";
+            ContractLevel level = parseLevel(row.getLevel());
 
-                        .riskPoints(row.getRiskPoints())
-
-                        // TEXT: List -> "\n" join
-                        .mediationSummaries(joinLines(row.getMediationSummaries()))
-                        .mediationCaseIds(row.getMediationCaseIds())
-
-                        .precedentSummaries(joinLines(row.getPrecedentSummaries()))
-                        .precedentCaseIds(row.getPrecedentCaseIds())
-                        .precedentEvidence(row.getPrecedentEvidence())
-
-                        .lawSummaries(joinLines(row.getLawSummaries()))
-                        .lawIds(row.getLawIds())
-
-                        .recommendedClauseText(row.getRecommendedClauseText())
-                        .build()
-                )
-                .toList();
+            entities.add(ClauseAnalysisResult.builder()
+                    .contract(contract)
+                    .clauseIndex(clauseIndex)
+                    .clauseText(clauseText)
+                    .level(level)
+                    .conclusion(row.getConclusion())
+                    .riskPoints(row.getRiskPoints())
+                    .mediationSummaries(joinLines(row.getMediationSummaries()))
+                    .mediationCaseIds(row.getMediationCaseIds())
+                    .precedentSummaries(joinLines(row.getPrecedentSummaries()))
+                    .precedentCaseIds(row.getPrecedentCaseIds())
+                    .precedentEvidence(row.getPrecedentEvidence())
+                    .lawSummaries(joinLines(row.getLawSummaries()))
+                    .lawIds(row.getLawIds())
+                    .recommendedClauseText(row.getRecommendedClauseText())
+                    .build());
+        }
 
         clauseAnalysisResultRepository.saveAll(entities);
+    }
+
+    private ContractLevel parseLevel(String level) {
+        if (level == null || level.isBlank()) return ContractLevel.NEEDS_REVIEW;
+        try {
+            return ContractLevel.valueOf(level.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            // NEED_UNDERSTAND 등 프론트/API 변형값 처리
+            return switch (level.trim().toUpperCase()) {
+                case "NEED_UNDERSTAND" -> ContractLevel.NEEDS_UNDERSTANDING;
+                case "NEED_REVIEW", "NEED_FIX" -> ContractLevel.NEEDS_REVIEW;
+                default -> ContractLevel.NEEDS_REVIEW;
+            };
+        }
     }
 
     private String joinLines(List<String> list) {
