@@ -27,11 +27,11 @@ class DBConfig:
 
 def load_db_config() -> DBConfig:
     return DBConfig(
-        host=os.environ.get("DB_HOST", "localhost"),
+        host=os.environ["DB_HOST"],
         port=int(os.environ.get("DB_PORT", "3306")),
-        user=os.environ.get("DB_USER", "root"),
-        password=os.environ.get("DB_PASSWORD", ""),
-        database=os.environ.get("DB_NAME", "homematch"),
+        user=os.environ["DB_USER"],
+        password=os.environ["DB_PASSWORD"],
+        database=os.environ["DB_NAME"],
     )
 
 

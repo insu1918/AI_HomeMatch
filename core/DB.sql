@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS precedents (
   precedent_id        VARCHAR(32)  NOT NULL COMMENT '판례정보일련번호',
 
   case_name           VARCHAR(255) NOT NULL COMMENT '사건명',
-  case_number         VARCHAR(64)  NOT NULL COMMENT '사건번호',
+  case_number         VARCHAR(255)  NOT NULL COMMENT '사건번호',
 
   decision_date       DATE NOT NULL COMMENT '선고일자',
   decision_type       VARCHAR(16)  NULL COMMENT '선고 구분 (선고/자 등)',
