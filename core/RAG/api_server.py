@@ -2,10 +2,18 @@
 from __future__ import annotations
 
 import json
+import os
 import re
-import sys, os
+import sys
 from typing import Any, Dict, Optional, Tuple
 
+# 등기부 explain_risk 등에서 OPENAI_API_KEY 사용 → .env 로드 (core 디렉터리 기준)
+try:
+    from dotenv import load_dotenv
+    _core_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    load_dotenv(os.path.join(_core_dir, ".env"))
+except Exception:
+    pass
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse

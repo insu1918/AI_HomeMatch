@@ -1,3 +1,11 @@
+"""
+등기부등본 위험 분석 모듈.
+
+구조화된 등기부 데이터(parser 출력)를 받아:
+- build_risk_flags: 위험 신호 문장 목록 생성 (GPT 입력용)
+- build_check_items: 사용자용 체크리스트 항목 생성 (status, summary)
+- explain_risk: 위험 신호를 GPT로 쉬운 말 설명문 생성 (OPENAI_API_KEY 있으면 호출)
+"""
 from __future__ import annotations
 
 import os
@@ -5,12 +13,17 @@ from typing import Any, Dict, List
 
 
 def build_risk_flags(structured: Dict[str, Any]) -> List[str]:
+    """
+    구조화된 등기부 데이터에서 위험 신호 문장 목록을 생성합니다.
+    규칙 기반(if 조건)으로 판단하며, 결과는 explain_risk()의 입력으로 사용됩니다.
+    """
     flags: List[str] = []
     prop = structured.get("property_info") or {}
     owners = structured.get("owners") or []
     rights = structured.get("rights") or []
     changes = structured.get("ownership_changes") or []
 
+    # 소유자 이름 목록 (중복 제거, 등장 순서 유지)
     owner_names = [o.get("name") for o in owners if o.get("name")]
     owner_names_unique: List[str] = []
     seen = set()
@@ -19,26 +32,36 @@ def build_risk_flags(structured: Dict[str, Any]) -> List[str]:
             seen.add(n)
             owner_names_unique.append(n)
 
+    # 공동 소유·지분 여부 (갑구에서 "공동" 또는 지분 필드 추출)
     has_explicit_joint = any((o.get("ownership_type") or "").strip() == "공동" for o in owners)
     has_share = any(o.get("share") for o in owners)
 
+    # 공동 소유 가능성 또는 소유자 변경 이력
     if (has_explicit_joint or has_share) and len(owner_names_unique) >= 2:
         flags.append("여러 명이 함께 소유하는 것으로 보입니다(공동 소유 가능성).")
     elif len(owner_names_unique) >= 2 and changes:
         flags.append("소유자가 변경된 기록이 있습니다(이전/현재 소유자가 함께 추출될 수 있음).")
 
+    # 을구 권리(근저당·전세권 등) 존재 여부
     if len(rights) > 0:
         flags.append(f"등기부에 {len(rights)}건의 권리(근저당·전세권 등)가 등재되어 있습니다.")
+    # 소유권 이전 이력
     if changes:
         flags.append("소유권 이전 이력이 있습니다. 시점 확인이 필요할 수 있습니다.")
+    # 표제부 주소·동호 미추출 시
     if not (prop.get("address") or prop.get("dong") or prop.get("ho")):
         flags.append("주소·동호 정보가 추출되지 않았습니다. 목적물 특정 확인이 필요합니다.")
+    # 위험 신호가 하나도 없으면 안내 문구 1개 추가
     if not flags:
         flags.append("추출된 정보 기준으로 특별한 위험 신호는 없습니다. 추가 확인을 권장합니다.")
     return flags
 
 
 def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """
+    구조화된 등기부 데이터에서 사용자용 체크리스트 항목을 생성합니다.
+    각 항목은 {"status": "ok"|"caution"|"pending", "summary": "설명 문장"} 형태입니다.
+    """
     prop = structured.get("property_info") or {}
     owners = structured.get("owners") or []
     rights = structured.get("rights") or []
@@ -46,6 +69,7 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     items: List[Dict[str, Any]] = []
 
+    # 소유자 이름 목록 (중복 제거)
     owner_names = [o.get("name", "").strip() for o in owners if o.get("name")]
     owner_names_unique: List[str] = []
     seen = set()
@@ -54,7 +78,7 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
             seen.add(n)
             owner_names_unique.append(n)
 
-    # 1) 소유자
+    # 1) 소유자 확인 항목
     if owner_names_unique:
         current_owner = owner_names_unique[-1]
         previous_owners = owner_names_unique[:-1]
@@ -75,7 +99,7 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
     else:
         items.append({"status": "pending", "summary": "소유자 정보가 추출되지 않았습니다. 등기부를 다시 확인하세요."})
 
-    # 2) 근저당/권리
+    # 2) 을구 권리(근저당·전세권 등) 존재 여부
     if len(rights) > 0:
         items.append(
             {
@@ -86,7 +110,7 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
     else:
         items.append({"status": "ok", "summary": "등기부에 근저당·가압류 등 권리가 등재되어 있지 않은 것으로 보입니다."})
 
-    # 3) 소유권 이전 시점
+    # 3) 갑구 소유권 이전 이력·시점
     if changes:
         dated = [c for c in changes if c.get("date")]
         if dated:
@@ -96,7 +120,7 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
     else:
         items.append({"status": "ok", "summary": "최근 소유권 이전 이력이 추출되지 않았습니다."})
 
-    # 4) 공동 소유 여부
+    # 4) 공동 소유 여부 (공동/지분 표기)
     has_explicit_joint = any((o.get("ownership_type") or "").strip() == "공동" for o in owners)
     has_share = any(o.get("share") for o in owners)
     if has_explicit_joint or has_share:
@@ -106,13 +130,13 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
     else:
         items.append({"status": "ok", "summary": "단독 소유로 보입니다. 다만 등기부 원문에서 확인하세요."})
 
-    # 5) 선순위 권리 구조
+    # 5) 선순위 권리 구조 (설정 순서·금액 확인 안내)
     if len(rights) > 0:
         items.append({"status": "caution", "summary": f"권리 {len(rights)}건이 있어 선순위 구조 확인이 필요합니다. 설정 순서/금액을 확인하세요."})
     else:
         items.append({"status": "ok", "summary": "선순위 권리가 뚜렷하게 추출되지 않았습니다."})
 
-    # 6) 목적물 특정
+    # 6) 목적물 특정 (주소·동호 추출 여부)
     addr = prop.get("address") or ""
     dong = prop.get("dong") or ""
     ho = prop.get("ho") or ""
@@ -126,6 +150,10 @@ def build_check_items(structured: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def explain_risk(structured: Dict[str, Any], risk_flags: List[str]) -> str:
+    """
+    위험 신호 목록(risk_flags)을 GPT에 넘겨, 일반 사용자용 쉬운 설명문을 생성합니다.
+    OPENAI_API_KEY가 없거나 API 호출 실패 시, 번호만 붙인 플래그 문장을 그대로 반환합니다.
+    """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         return "\n\n".join(f"{i+1}. {f}\n(추가 확인을 권장합니다.)" for i, f in enumerate(risk_flags))
@@ -135,6 +163,7 @@ def explain_risk(structured: Dict[str, Any], risk_flags: List[str]) -> str:
 
         client = OpenAI(api_key=api_key)
         risk_text = "\n".join(f"{i+1}. {f}" for i, f in enumerate(risk_flags))
+        # GPT에 줄 요청: 법률 용어 배제, 한 줄 요약·설명·주의점·추가 확인 사항
         user_content = (
             "다음은 등기부 분석 시스템이 탐지한 위험 신호 목록입니다.\n\n"
             f"{risk_text}\n\n"
@@ -152,5 +181,6 @@ def explain_risk(structured: Dict[str, Any], risk_flags: List[str]) -> str:
         )
         return (resp.choices[0].message.content or "").strip()
     except Exception:
+        # API 오류 시 플래그만 번호 붙여 반환
         return "\n\n".join(f"{i+1}. {f}\n(추가 확인을 권장합니다.)" for i, f in enumerate(risk_flags))
 
